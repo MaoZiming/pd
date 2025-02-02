@@ -282,6 +282,12 @@ func SetApproximateSize(v int64) RegionCreateOption {
 	}
 }
 
+func SetGuardValue(v string) RegionCreateOption {
+	return func(region *RegionInfo) {
+		region.guardValue = v
+	}
+}
+
 // SetApproximateKvSize sets the approximate size for the region.
 func SetApproximateKvSize(v int64) RegionCreateOption {
 	return func(region *RegionInfo) {

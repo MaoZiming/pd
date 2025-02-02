@@ -69,6 +69,7 @@ type RegionInfo struct {
 	readBytes         uint64
 	readKeys          uint64
 	approximateSize   int64
+	guardValue        string
 	approximateKvSize int64
 	approximateKeys   int64
 	interval          *pdpb.TimeInterval
@@ -192,6 +193,7 @@ type RegionHeartbeatRequest interface {
 	GetInterval() *pdpb.TimeInterval
 	GetQueryStats() *pdpb.QueryStats
 	GetApproximateSize() uint64
+	GetGuardValue() string
 	GetApproximateKeys() uint64
 }
 
@@ -217,6 +219,7 @@ func RegionFromHeartbeat(heartbeat RegionHeartbeatRequest, opts ...RegionCreateO
 		readKeys:        heartbeat.GetKeysRead(),
 		approximateSize: int64(regionSize),
 		approximateKeys: int64(heartbeat.GetApproximateKeys()),
+		guardValue:      heartbeat.GetGuardValue(),
 		interval:        heartbeat.GetInterval(),
 		queryStats:      heartbeat.GetQueryStats(),
 		source:          Heartbeat,
@@ -289,6 +292,7 @@ func (r *RegionInfo) Clone(opts ...RegionCreateOption) *RegionInfo {
 		readBytes:         r.readBytes,
 		readKeys:          r.readKeys,
 		approximateSize:   r.approximateSize,
+		guardValue:        r.guardValue,
 		approximateKvSize: r.approximateKvSize,
 		approximateKeys:   r.approximateKeys,
 		interval:          typeutil.DeepClone(r.interval, TimeIntervalFactory),
@@ -571,6 +575,10 @@ func (r *RegionInfo) GetApproximateSize() int64 {
 	return r.approximateSize
 }
 
+func (r *RegionInfo) GetGuardValue() string {
+	return r.guardValue
+}
+
 // GetStorePeerApproximateKeys returns the approximate keys of the peer on the specified store.
 func (r *RegionInfo) GetStorePeerApproximateKeys(storeID uint64) int64 {
 	peer := r.GetStorePeer(storeID)
@@ -806,6 +814,12 @@ func GenerateRegionGuideFunc(enableLog bool) RegionGuideFunc {
 				saveCache = true
 				return
 			}
+
+			if region.GetGuardValue() != origin.GetGuardValue() {
+				saveCache = true
+				return
+			}
+
 			if region.GetReplicationStatus().GetState() != replication_modepb.RegionReplicationState_UNKNOWN &&
 				(region.GetReplicationStatus().GetState() != origin.GetReplicationStatus().GetState() ||
 					region.GetReplicationStatus().GetStateId() != origin.GetReplicationStatus().GetStateId()) {
