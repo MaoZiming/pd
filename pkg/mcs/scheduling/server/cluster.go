@@ -516,7 +516,7 @@ func (c *Cluster) StopBackgroundJobs() {
 // HandleRegionHeartbeat processes RegionInfo reports from client.
 func (c *Cluster) HandleRegionHeartbeat(region *core.RegionInfo) error {
 
-	log.Info("Received Region Heartbeat",
+	log.Info("Cluster Received Region Heartbeat",
 		zap.Uint64("region_id", region.GetID()),
 		zap.Uint64("leader_id", region.GetLeader().GetId()),
 		zap.Uint64("read_bytes", region.GetBytesRead()),

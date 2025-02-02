@@ -207,6 +207,19 @@ func RegionFromHeartbeat(heartbeat RegionHeartbeatRequest, opts ...RegionCreateO
 		regionSize = EmptyRegionApproximateSize
 	}
 
+	log.Info("Received RegionHeartbeatRequest",
+		zap.Uint64("region_id", heartbeat.GetRegion().GetId()),
+		zap.Uint64("term", heartbeat.GetTerm()),
+		zap.Uint64("leader_id", heartbeat.GetLeader().GetId()),
+		zap.Uint64("bytes_written", heartbeat.GetBytesWritten()),
+		zap.Uint64("keys_written", heartbeat.GetKeysWritten()),
+		zap.Uint64("bytes_read", heartbeat.GetBytesRead()),
+		zap.Uint64("keys_read", heartbeat.GetKeysRead()),
+		zap.String("guard_value", heartbeat.GetGuardValue()),
+		zap.Any("down_peers", heartbeat.GetDownPeers()),
+		zap.Any("pending_peers", heartbeat.GetPendingPeers()),
+	)
+
 	region := &RegionInfo{
 		term:            heartbeat.GetTerm(),
 		meta:            heartbeat.GetRegion(),

@@ -144,7 +144,7 @@ type RegionInfo struct {
 	WrittenKeys     uint64        `json:"written_keys"`
 	ReadKeys        uint64        `json:"read_keys"`
 	ApproximateSize int64         `json:"approximate_size"`
-	GuardValue      string        `json:"guard_value`
+	GuardValue      string        `json:"guard_value"`
 	ApproximateKeys int64         `json:"approximate_keys"`
 	Buckets         []string      `json:"buckets,omitempty"`
 
