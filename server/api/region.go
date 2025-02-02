@@ -276,6 +276,10 @@ func (h *regionHandler) GetRegionByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Info("Raw JSON Output",
+		zap.String("json", string(b)),
+	)
+
 	h.rd.Data(w, http.StatusOK, b)
 }
 
@@ -422,7 +426,19 @@ func marshalRegionsInfoJSON(ctx context.Context, regions []*core.RegionInfo) ([]
 }
 
 func covertAPIRegionInfo(r *core.RegionInfo, region *RegionInfo, out *jwriter.Writer) {
+
+	log.Info("covertAPIRegionInfo - Before InitRegion",
+		zap.Uint64("region_id", r.GetID()),
+		zap.String("guard_value", r.GetGuardValue()),
+	)
+
 	InitRegion(r, region)
+
+	log.Info("covertAPIRegionInfo - After InitRegion",
+		zap.Uint64("region_id", region.ID),
+		zap.String("guard_value", region.GuardValue),
+	)
+
 	// EasyJSON will not check anonymous struct pointer field and will panic if the field is nil.
 	// So we need to set the field to default value explicitly when the anonymous struct pointer is nil.
 	region.Leader.setDefaultIfNil()
@@ -435,6 +451,12 @@ func covertAPIRegionInfo(r *core.RegionInfo, region *RegionInfo, out *jwriter.Wr
 	for i := range region.DownPeers {
 		region.DownPeers[i].setDefaultIfNil()
 	}
+
+	log.Info("covertAPIRegionInfo - Before MarshalEasyJSON",
+		zap.Uint64("region_id", region.ID),
+		zap.String("guard_value", region.GuardValue),
+	)
+
 	region.MarshalEasyJSON(out)
 }
 
