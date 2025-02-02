@@ -144,6 +144,7 @@ type RegionInfo struct {
 	WrittenKeys     uint64        `json:"written_keys"`
 	ReadKeys        uint64        `json:"read_keys"`
 	ApproximateSize int64         `json:"approximate_size"`
+	GuardValue      string        `json:"guard_value`
 	ApproximateKeys int64         `json:"approximate_keys"`
 	Buckets         []string      `json:"buckets,omitempty"`
 
@@ -192,6 +193,7 @@ func InitRegion(r *core.RegionInfo, s *RegionInfo) *RegionInfo {
 	s.ReadBytes = r.GetBytesRead()
 	s.ReadKeys = r.GetKeysRead()
 	s.ApproximateSize = r.GetApproximateSize()
+	s.GuardValue = r.GetGuardValue()
 	s.ApproximateKeys = r.GetApproximateKeys()
 	s.ReplicationStatus = fromPBReplicationStatus(r.GetReplicationStatus())
 	s.Buckets = nil

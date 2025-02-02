@@ -194,6 +194,13 @@ func (l *balanceLeaderScheduler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 // BalanceLeaderCreateOption is used to create a scheduler with an option.
 type BalanceLeaderCreateOption func(s *balanceLeaderScheduler)
 
+// WithBalanceLeaderFilterCounterName sets the filter counter name for the scheduler.
+func WithBalanceLeaderFilterCounterName(name string) BalanceLeaderCreateOption {
+	return func(s *balanceLeaderScheduler) {
+		s.filterCounter.SetScope(name)
+	}
+}
+
 // WithBalanceLeaderName sets the name for the scheduler.
 func WithBalanceLeaderName(name string) BalanceLeaderCreateOption {
 	return func(s *balanceLeaderScheduler) {
@@ -513,7 +520,7 @@ func (l *balanceLeaderScheduler) transferLeaderIn(solver *solver, collector *pla
 	if leaderFilter := filter.NewPlacementLeaderSafeguard(l.GetName(), conf, solver.GetBasicCluster(), solver.GetRuleManager(), solver.Region, solver.Source, false /*allowMoveLeader*/); leaderFilter != nil {
 		finalFilters = append(l.filters, leaderFilter)
 	}
-	target := filter.NewCandidates([]*core.StoreInfo{solver.Target}).
+	target := filter.NewCandidates(l.R, []*core.StoreInfo{solver.Target}).
 		FilterTarget(conf, nil, l.filterCounter, finalFilters...).
 		PickFirst()
 	if target == nil {

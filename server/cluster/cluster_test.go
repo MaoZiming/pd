@@ -601,7 +601,10 @@ func TestRegionHeartbeatHotStat(t *testing.T) {
 	re.NoError(err)
 	cluster := newTestRaftCluster(ctx, mockid.NewIDAllocator(), opt, storage.NewStorageWithMemoryBackend(), core.NewBasicCluster())
 	cluster.coordinator = schedule.NewCoordinator(ctx, cluster, nil)
-	newTestStores(4, "2.0.0")
+	stores := newTestStores(4, "2.0.0")
+	for _, store := range stores {
+		cluster.PutStore(store.GetMeta())
+	}
 	peers := []*metapb.Peer{
 		{
 			Id:      1,
@@ -1106,6 +1109,7 @@ func TestRegionLabelIsolationLevel(t *testing.T) {
 	opt.SetReplicationConfig(cfg)
 	re.NoError(err)
 	cluster := newTestRaftCluster(ctx, mockid.NewIDAllocator(), opt, storage.NewStorageWithMemoryBackend(), core.NewBasicCluster())
+	cluster.coordinator = schedule.NewCoordinator(ctx, cluster, nil)
 
 	for i := uint64(1); i <= 4; i++ {
 		var labels []*metapb.StoreLabel
@@ -1140,11 +1144,40 @@ func TestRegionLabelIsolationLevel(t *testing.T) {
 		StartKey: []byte{byte(1)},
 		EndKey:   []byte{byte(2)},
 	}
-	r := core.NewRegionInfo(region, peers[0])
-	re.NoError(cluster.putRegion(r))
+	r1 := core.NewRegionInfo(region, peers[0])
+	re.NoError(cluster.putRegion(r1))
 
-	cluster.UpdateRegionsLabelLevelStats([]*core.RegionInfo{r})
+	cluster.UpdateRegionsLabelLevelStats([]*core.RegionInfo{r1})
 	counter := cluster.labelLevelStats.GetLabelCounter()
+	re.Equal(0, counter["none"])
+	re.Equal(1, counter["zone"])
+
+	region = &metapb.Region{
+		Id:       10,
+		Peers:    peers,
+		StartKey: []byte{byte(2)},
+		EndKey:   []byte{byte(3)},
+	}
+	r2 := core.NewRegionInfo(region, peers[0])
+	re.NoError(cluster.putRegion(r2))
+
+	cluster.UpdateRegionsLabelLevelStats([]*core.RegionInfo{r2})
+	counter = cluster.labelLevelStats.GetLabelCounter()
+	re.Equal(0, counter["none"])
+	re.Equal(2, counter["zone"])
+
+	// issue: https://github.com/tikv/pd/issues/8700
+	// step1: heartbeat a overlap region, which is used to simulate the case that the region is merged.
+	// step2: update region 9 and region 10, which is used to simulate the case that patrol is triggered.
+	// We should only count region 9.
+	overlapRegion := r1.Clone(
+		core.WithStartKey(r1.GetStartKey()),
+		core.WithEndKey(r2.GetEndKey()),
+		core.WithLeader(r2.GetPeer(8)),
+	)
+	re.NoError(cluster.HandleRegionHeartbeat(overlapRegion))
+	cluster.UpdateRegionsLabelLevelStats([]*core.RegionInfo{r1, r2})
+	counter = cluster.labelLevelStats.GetLabelCounter()
 	re.Equal(0, counter["none"])
 	re.Equal(1, counter["zone"])
 }
@@ -3008,8 +3041,6 @@ func TestAddScheduler(t *testing.T) {
 	re.NoError(controller.RemoveScheduler(schedulers.BalanceLeaderName))
 	re.NoError(controller.RemoveScheduler(schedulers.BalanceRegionName))
 	re.NoError(controller.RemoveScheduler(schedulers.HotRegionName))
-	re.NoError(controller.RemoveScheduler(schedulers.BalanceWitnessName))
-	re.NoError(controller.RemoveScheduler(schedulers.TransferWitnessLeaderName))
 	re.Empty(controller.GetSchedulerNames())
 
 	stream := mockhbstream.NewHeartbeatStream()
@@ -3100,13 +3131,12 @@ func TestPersistScheduler(t *testing.T) {
 	re.NoError(err)
 	re.Len(sches, defaultCount+2)
 
-	// remove 5 schedulers
+	// remove 3 schedulers
 	re.NoError(controller.RemoveScheduler(schedulers.BalanceLeaderName))
 	re.NoError(controller.RemoveScheduler(schedulers.BalanceRegionName))
 	re.NoError(controller.RemoveScheduler(schedulers.HotRegionName))
-	re.NoError(controller.RemoveScheduler(schedulers.BalanceWitnessName))
-	re.NoError(controller.RemoveScheduler(schedulers.TransferWitnessLeaderName))
-	re.Len(controller.GetSchedulerNames(), defaultCount-3)
+	// only remains 2 items with independent config.
+	re.Len(controller.GetSchedulerNames(), 2)
 	re.NoError(co.GetCluster().GetSchedulerConfig().Persist(storage))
 	co.Stop()
 	co.GetSchedulersController().Wait()
@@ -3157,7 +3187,7 @@ func TestPersistScheduler(t *testing.T) {
 	brs, err := schedulers.CreateScheduler(schedulers.BalanceRegionType, oc, storage, schedulers.ConfigSliceDecoder(schedulers.BalanceRegionType, []string{"", ""}))
 	re.NoError(err)
 	re.NoError(controller.AddScheduler(brs))
-	re.Len(controller.GetSchedulerNames(), defaultCount)
+	re.Len(controller.GetSchedulerNames(), 5)
 
 	// the scheduler option should contain 6 items
 	// the `hot scheduler` are disabled
@@ -3178,9 +3208,9 @@ func TestPersistScheduler(t *testing.T) {
 
 	co.Run()
 	controller = co.GetSchedulersController()
-	re.Len(controller.GetSchedulerNames(), defaultCount-1)
+	re.Len(controller.GetSchedulerNames(), 4)
 	re.NoError(controller.RemoveScheduler(schedulers.EvictLeaderName))
-	re.Len(controller.GetSchedulerNames(), defaultCount-2)
+	re.Len(controller.GetSchedulerNames(), 3)
 }
 
 func TestRemoveScheduler(t *testing.T) {
@@ -3216,8 +3246,6 @@ func TestRemoveScheduler(t *testing.T) {
 	re.NoError(controller.RemoveScheduler(schedulers.BalanceRegionName))
 	re.NoError(controller.RemoveScheduler(schedulers.HotRegionName))
 	re.NoError(controller.RemoveScheduler(schedulers.GrantLeaderName))
-	re.NoError(controller.RemoveScheduler(schedulers.BalanceWitnessName))
-	re.NoError(controller.RemoveScheduler(schedulers.TransferWitnessLeaderName))
 	// all removed
 	sches, _, err = storage.LoadAllSchedulerConfigs()
 	re.NoError(err)
