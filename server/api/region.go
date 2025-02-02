@@ -261,6 +261,15 @@ func (h *regionHandler) GetRegionByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	regionInfo := rc.GetRegion(regionID)
+
+	// Log the entire region info before marshalling
+	log.Info("Fetched Region Info",
+		zap.Uint64("region_id", regionID),
+		zap.Int64("approximate_size", regionInfo.GetApproximateSize()),
+		zap.Int64("approximate_keys", regionInfo.GetApproximateKeys()),
+		zap.String("guard_value", regionInfo.GetGuardValue()),
+	)
+
 	b, err := marshalRegionInfoJSON(r.Context(), regionInfo)
 	if err != nil {
 		h.rd.JSON(w, http.StatusInternalServerError, err.Error())

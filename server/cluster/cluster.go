@@ -1115,7 +1115,10 @@ var regionGuide = core.GenerateRegionGuideFunc(true)
 // processRegionHeartbeat updates the region information.
 func (c *RaftCluster) processRegionHeartbeat(region *core.RegionInfo) error {
 
-	log.Info("RaftCluster processRegionHeartbeat")
+	log.Info("RaftCluster processRegionHeartbeat",
+		zap.Uint64("region_id", region.GetID()),
+		zap.String("guard_value", region.GetGuardValue()),
+	)
 
 	origin, _, err := c.core.PreCheckPutRegion(region)
 	if err != nil {

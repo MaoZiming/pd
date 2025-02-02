@@ -889,6 +889,12 @@ func (r *RegionsInfo) GetRegion(regionID uint64) *RegionInfo {
 
 func (r *RegionsInfo) getRegionLocked(regionID uint64) *RegionInfo {
 	if item := r.regions[regionID]; item != nil {
+		log.Info("Retrieved Region Info",
+			zap.Uint64("region_id", regionID),
+			zap.Int64("approximate_size", item.RegionInfo.GetApproximateSize()),
+			zap.Int64("approximate_keys", item.RegionInfo.GetApproximateKeys()),
+			zap.String("guard_value", item.RegionInfo.GetGuardValue()),
+		)
 		return item.RegionInfo
 	}
 	return nil
@@ -931,6 +937,11 @@ func (r *RegionsInfo) PreCheckPutRegion(region *RegionInfo) (*RegionInfo, []*reg
 
 // AtomicCheckAndPutRegion checks if the region is valid to put, if valid then put.
 func (r *RegionsInfo) AtomicCheckAndPutRegion(region *RegionInfo) ([]*RegionInfo, error) {
+	log.Info("AtomicCheckAndPutRegion - Input Region",
+		zap.Uint64("region_id", region.GetID()),
+		zap.String("guard_value", region.GetGuardValue()),
+	)
+
 	r.t.Lock()
 	var ols []*regionItem
 	origin := r.getRegionLocked(region.GetID())
@@ -943,6 +954,13 @@ func (r *RegionsInfo) AtomicCheckAndPutRegion(region *RegionInfo) ([]*RegionInfo
 		return nil, err
 	}
 	origin, overlaps, rangeChanged := r.setRegionLocked(region, true, ols...)
+
+	for _, overlap := range overlaps {
+		log.Info("AtomicCheckAndPutRegion - Overlap Region",
+			zap.Uint64("region_id", overlap.GetID()),
+			zap.String("guard_value", overlap.GetGuardValue()),
+		)
+	}
 	r.t.Unlock()
 	r.UpdateSubTree(region, origin, overlaps, rangeChanged)
 	return overlaps, nil
