@@ -34,6 +34,13 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+      - name: # Force Correct kvproto Version
+        run: |
+          go clean -modcache
+          go mod tidy
+          go get github.com/MaoZiming/kvproto@v0.0.0-20250202045127-3260842c3eb9
+          go mod vendor
+          go list -m all | grep kvproto  # Debugging step to confirm kvproto version
       - name: Make Test
         env:
           WORKER_ID: ${{ matrix.worker_id }}
