@@ -516,15 +516,15 @@ func (c *Cluster) StopBackgroundJobs() {
 // HandleRegionHeartbeat processes RegionInfo reports from client.
 func (c *Cluster) HandleRegionHeartbeat(region *core.RegionInfo) error {
 
-	log.Info("Cluster Received Region Heartbeat",
-		zap.Uint64("region_id", region.GetID()),
-		zap.Uint64("leader_id", region.GetLeader().GetId()),
-		zap.Uint64("read_bytes", region.GetBytesRead()),
-		zap.Uint64("written_bytes", region.GetBytesWritten()),
-		zap.Int64("approximate_size", region.GetApproximateSize()),
-		zap.Int64("approximate_keys", region.GetApproximateKeys()),
-		zap.String("guard_value", region.GetGuardValue()),
-	)
+	// log.Info("Cluster Received Region Heartbeat",
+	// 	zap.Uint64("region_id", region.GetID()),
+	// 	zap.Uint64("leader_id", region.GetLeader().GetId()),
+	// 	zap.Uint64("read_bytes", region.GetBytesRead()),
+	// 	zap.Uint64("written_bytes", region.GetBytesWritten()),
+	// 	zap.Int64("approximate_size", region.GetApproximateSize()),
+	// 	zap.Int64("approximate_keys", region.GetApproximateKeys()),
+	// 	zap.String("guard_value", region.GetGuardValue()),
+	// )
 
 	if err := c.processRegionHeartbeat(region); err != nil {
 		return err

@@ -1381,22 +1381,22 @@ func (s *GrpcServer) RegionHeartbeat(stream pdpb.PD_RegionHeartbeatServer) error
 			}
 			if schedulingStream != nil {
 
-				log.Info("Received RegionHeartbeatRequest",
-					zap.Uint64("cluster_id", request.GetHeader().GetClusterId()),
-					zap.Uint64("sender_id", request.GetHeader().GetSenderId()),
-					zap.Uint64("region_id", request.GetRegion().GetId()),
-					zap.Uint64("term", request.GetTerm()),
-					zap.Uint64("leader_id", request.GetLeader().GetId()),
-					zap.Uint64("bytes_written", request.GetBytesWritten()),
-					zap.Uint64("keys_written", request.GetKeysWritten()),
-					zap.Uint64("bytes_read", request.GetBytesRead()),
-					zap.Uint64("keys_read", request.GetKeysRead()),
-					zap.String("guard_value", request.GetGuardValue()),
-					zap.Any("down_peers", request.GetDownPeers()),
-					zap.Any("pending_peers", request.GetPendingPeers()),
-					zap.Any("query_stats", request.GetQueryStats()),
-					zap.Any("interval", request.GetInterval()),
-				)
+				// log.Info("Received RegionHeartbeatRequest",
+				// 	zap.Uint64("cluster_id", request.GetHeader().GetClusterId()),
+				// 	zap.Uint64("sender_id", request.GetHeader().GetSenderId()),
+				// 	zap.Uint64("region_id", request.GetRegion().GetId()),
+				// 	zap.Uint64("term", request.GetTerm()),
+				// 	zap.Uint64("leader_id", request.GetLeader().GetId()),
+				// 	zap.Uint64("bytes_written", request.GetBytesWritten()),
+				// 	zap.Uint64("keys_written", request.GetKeysWritten()),
+				// 	zap.Uint64("bytes_read", request.GetBytesRead()),
+				// 	zap.Uint64("keys_read", request.GetKeysRead()),
+				// 	zap.String("guard_value", request.GetGuardValue()),
+				// 	zap.Any("down_peers", request.GetDownPeers()),
+				// 	zap.Any("pending_peers", request.GetPendingPeers()),
+				// 	zap.Any("query_stats", request.GetQueryStats()),
+				// 	zap.Any("interval", request.GetInterval()),
+				// )
 
 				req := &schedulingpb.RegionHeartbeatRequest{
 					Header: &schedulingpb.RequestHeader{
